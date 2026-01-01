@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+
+[package]
+name = "zero-origin-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license = "AGPL-3.0-or-later"
+description = "Unified CLI binary (`zero-origin`) for L7 Edge Proxy, C2PA Signing, Keygen, Verification & Audit"
+
+[[bin]]
+name = "zero-origin"
+path = "src/main.rs"
+
+[dependencies]
+zero-origin-common = { path = "../zero-origin-common" }
+zero-origin-verify = { path = "../zero-origin-verify" }
+zero-origin-scanner = { path = "../zero-origin-scanner" }
+zero-origin-c2pa = { path = "../zero-origin-c2pa" }
+zero-origin-proxy = { path = "../zero-origin-proxy" }
+tokio.workspace = true
+hyper.workspace = true
+hyper-util.workspace = true
+hyper-rustls.workspace = true
+rustls.workspace = true
+http-body-util.workspace = true
+bytes.workspace = true
+clap.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

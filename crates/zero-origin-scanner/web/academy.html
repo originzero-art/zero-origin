@@ -1,0 +1,512 @@
+<!--
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+-->
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cum Funcționează Internetul (99% -&gt; 1%) // Academia DNS și IP pe scanner.originzero.art</title>
+  <meta name="description" content="Curs tehnic interactiv de arhitectură DNS, adresare IPv4/IPv6 CIDR, rutare BGP Anycast și suveranitate TLS/JA4 pe fir, construit pentru tranziția de la utilizator pasiv (99%) la inginer de rețea (1%).">
+  <link rel="canonical" href="https://scanner.originzero.art/cum-functioneaza-internetul">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/assets/scanner.css">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Sari direct la conținutul principal</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/" class="brand-logo" aria-label="scanner.originzero.art pagina principală">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span><span class="brand-char-gold">o</span><span class="brand-char-silver">rigin</span><span class="brand-char-gold">Z</span><span class="brand-char-silver">ero</span><span class="brand-art">.Art</span></span>
+        <span class="brand-sub-pill">ACADEMIA 1%</span>
+      </a>
+
+      <nav class="top-nav" aria-label="Navigare academie">
+        <a href="/" class="nav-pill">Comparator Scut Live</a>
+        <a href="/cum-functioneaza-internetul" class="nav-pill" aria-current="page">Academia DNS și IP (99% -&gt; 1%)</a>
+        <a href="https://originzero.art/" class="nav-pill">Înapoi pe originZero.Art</a>
+        <button type="button" id="theme-toggle" class="theme-btn" aria-pressed="false">Temă</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content" class="page-shell">
+    <section class="hero-banner">
+      <span class="epistemic-badge">[VERIFIED_TECHNICAL] Arhitectură IETF RFC + Laborator CCIE</span>
+      <h1 class="page-title">Cum Funcționează Real Internetul: Tranziția de la 99% la 1%</h1>
+      <p class="page-lead">
+        99% dintre utilizatori folosesc Internetul ca pe o cutie neagră: tastează un nume în bara de adrese și așteaptă pixeli pe ecran. Celălalt 1% vede lanțul determinist de pachete: rezoluția ierarhică DNS pornind din punctul rădăcină (<code>.</code>), măștile pe biți CIDR din tabela de rutare, negocierea TCP și TLS <code>ClientHello</code>, și modul în care scutul <code>zero-origin</code> apără suveranitatea creatorilor direct pe fir.
+      </p>
+    </section>
+
+    <nav class="academy-toc" aria-label="Modulele cursului">
+      <a href="#modul-0" class="btn-outline">0. 99% vs. 1%</a>
+      <a href="#modul-1" class="btn-outline">1. Arhitectura DNS și DNSSEC</a>
+      <a href="#modul-2" class="btn-outline">2. Adresare IP, CIDR și IPv6</a>
+      <a href="#modul-3" class="btn-outline">3. Rutare, BGP și JA4 pe Fir</a>
+      <a href="#modul-4" class="btn-outline">4. Simulator CLI și 5 Incidente</a>
+      <a href="#modul-5" class="btn-outline">5. Examen Final CCIE</a>
+    </nav>
+
+    <!-- ================================================================== -->
+    <!-- MODULUL 0: 99% VS 1% -->
+    <!-- ================================================================== -->
+    <section id="modul-0" class="module-block" aria-labelledby="h-mod-0">
+      <span class="epistemic-badge">[VERIFIED_TECHNICAL] Modelul Mental al Pachetelor</span>
+      <h2 id="h-mod-0">Modulul 0: Utilizarea Internetului (99%) vs. Înțelegerea Rezoluției și Transportului (1%)</h2>
+      <p>
+        În rețelistică nu există "nor" (cloud) și nu există conexiuni abstracte. Fiecare interacțiune cu <code>originzero.art</code> este o secvență strict ordonată de apeluri de sistem în kernel, cadre Ethernet, pachete IP, datagrame UDP și segmente TCP. Când ceva se rupe în producție, doar cine înțelege straturile poate izola cauza în câteva secunde.
+      </p>
+
+      <div tabindex="0" role="region" aria-labelledby="cap-99-1" class="table-wrapper">
+        <table class="data-table table-99-1">
+          <caption id="cap-99-1">Decompoziția completă a unei accesări https://originzero.art</caption>
+          <thead>
+            <tr>
+              <th scope="col">Etapă</th>
+              <th scope="col">Percepția de Suprafață (99%)</th>
+              <th scope="col">Realitatea pe Fir și în Kernel (1%)</th>
+              <th scope="col">Mod de Eșec și Comandă Diagnostic</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">1. Nume</th>
+              <td>Browserul "știe" unde se află site-ul după nume.</td>
+              <td>Procesul apelează <code>getaddrinfo()</code> către <strong>Stub Resolver</strong>-ul din OS, care trimite o interogare UDP pe portul <code>53</code> cu bitul <code>RD=1</code> către un resolver recursiv (<a href="https://datatracker.ietf.org/doc/html/rfc1035">RFC 1035</a>).</td>
+              <td><code>NXDOMAIN</code>, <code>SERVFAIL</code> sau IP vechi blocat în cache <code>TTL</code>. Diagnostic: <code>dig +trace originzero.art</code>.</td>
+            </tr>
+            <tr>
+              <th scope="row">2. Rutare L3</th>
+              <td>Datele merg "direct" spre server pe cablul cel mai scurt.</td>
+              <td>Kernelul evaluează tabela FIB prin <strong>Longest Prefix Match</strong> (<a href="https://datatracker.ietf.org/doc/html/rfc4632">RFC 4632</a>), încapsulează pachetul IP, iar sistemele autonome îl înaintează conform atributelor de politică BGP-4 (<a href="https://datatracker.ietf.org/doc/html/rfc4271">RFC 4271</a>).</td>
+              <td>Blackhole route, rutare asimetrică sau buclă TTL (<code>ICMP Time Exceeded</code>). Diagnostic: <code>ip route get</code> și <code>traceroute -n</code>.</td>
+            </tr>
+            <tr>
+              <th scope="row">3. Transport L4</th>
+              <td>Conexiunea se deschide instantaneu.</td>
+              <td>Handshake TCP în 3 pași (<code>SYN</code>, <code>SYN-ACK</code>, <code>ACK</code>) pe portul destinație <code>:443</code>, negociind numerele de secvență ISN, fereastra de recepție și MSS (<a href="https://datatracker.ietf.org/doc/html/rfc9293">RFC 9293</a>).</td>
+              <td>Port filtrat la nivel L3/L4 în firewall (timeout pe <code>SYN</code>) sau proces oprit (<code>TCP RST</code>). Diagnostic: <code>ss -tulpn</code> / <code>tcpdump</code>.</td>
+            </tr>
+            <tr>
+              <th scope="row">4. TLS și JA4</th>
+              <td>Lacătul HTTPS ascunde absolut totul de la primul octet.</td>
+              <td>Primul mesaj TLS, <code>ClientHello</code> (<a href="https://datatracker.ietf.org/doc/html/rfc8446">RFC 8446</a>), circulă necriptat în privința extensiei <code>SNI</code> (<a href="https://datatracker.ietf.org/doc/html/rfc6066">RFC 6066</a>), ordinii cifrurilor și valorilor GREASE. <code>zero-origin</code> le citește prin <code>MSG_PEEK</code> și calculează amprenta <code>JA4</code> înainte de decriptare.</td>
+              <td>Dacă pui un CDN terț în față, CDN-ul termină TLS-ul și distruge amprenta <code>JA4</code> originală a robotului.</td>
+            </tr>
+            <tr>
+              <th scope="row">5. Aplicare L7</th>
+              <td>Dacă site-ul are un <code>robots.txt</code>, roboții îl vor respecta politicos.</td>
+              <td><code>robots.txt</code> este doar o recomandare pasivă. Scutul activ <code>zero-origin</code> taie sesiunea cu <code>403 Forbidden</code> înainte de citirea imaginii din origine și atașează <code>TDM-Reservation: 1</code> + manifestul criptografic <code>C2PA Ed25519</code> pentru vizitatorii umani.</td>
+              <td>Pe <code>unsafe.originzero.art</code> (fără scut), <code>GPTBot</code> descarcă 1.84 MB de pixeli cu <code>200 OK</code>; pe <code>originzero.art</code> primește <code>403</code> și <code>0 octeți</code> de imagine.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- MODULUL 1: DNS SI DNSSEC -->
+    <!-- ================================================================== -->
+    <section id="modul-1" class="module-block" aria-labelledby="h-mod-1">
+      <span class="epistemic-badge">[VERIFIED_TECHNICAL] RFC 1034 · RFC 1035 · RFC 2181 · RFC 4033-4035</span>
+      <h2 id="h-mod-1">Modulul 1: Sistemul Ierarhic DNS, Înregistrările de Zonă și Lanțul DNSSEC</h2>
+      <p>
+        Rețeaua IP rutează pachete exclusiv pe baza adreselor numerice pe 32 de biți (IPv4) sau 128 de biți (IPv6). Sistemul de Nume de Domenii (DNS, definit în <a href="https://datatracker.ietf.org/doc/html/rfc1034">RFC 1034</a> și <a href="https://datatracker.ietf.org/doc/html/rfc1035">RFC 1035</a>) este o bază de date distribuită, strict ierarhică, care traduce un nume complet calificat (FQDN, de exemplu <code>originzero.art.</code>, terminat obligatoriu cu punctul rădăcină <code>.</code>) în adrese IP și politici asociate.
+      </p>
+
+      <h3>1.1 Cei trei actori distincți în rezoluția DNS (nu îi confunda niciodată)</h3>
+      <ul>
+        <li>
+          <strong>1. Stub Resolver (în sistemul tău de operare):</strong> Nu știe să parcurgă arborele DNS. Este o bibliotecă minimalistă (precum rezolvorul local <code>libc</code> din nucleul POSIX) care citește <code>/etc/resolv.conf</code> și trimite un pachet UDP pe portul <code>53</code> cu bitul <strong><code>RD=1</code> (Recursion Desired)</strong> către un resolver recursiv, cerând răspunsul final gata calculat.
+        </li>
+        <li>
+          <strong>2. Recursive Resolver (Caching Resolver, ex. <code>1.1.1.1</code>, <code>9.9.9.9</code> sau <code>unbound</code>):</strong> Muncitorul care parcurge iterativ ierarhia DNS în numele clientului. Trimite interogări cu <code>RD=0</code> către serverele rădăcină, TLD și autoritative, validează semnăturile criptografice DNSSEC și memorează răspunsul în cache exact pentru numărul de secunde specificat în câmpul <strong><code>TTL</code> (Time To Live)</strong> al înregistrării.
+        </li>
+        <li>
+          <strong>3. Authoritative Nameserver (ex. <code>ns1.example.net.</code> .. <code>ns4.example.net.</code>):</strong> Sursa de adevăr pentru zona <code>originzero.art.</code>. Răspunde cu bitul <strong><code>AA=1</code> (Authoritative Answer)</strong> și cu recursivitatea dezactivată (<code>RA=0</code>). Refuză să caute alte domenii din Internet; servește strict fișierul de zonă configurat de administrator.
+        </li>
+      </ul>
+
+      <!-- INTERACTIVE SVG #1: DNS RESOLUTION CHAIN -->
+      <h3>1.2 Vizualizator Interactiv: Lanțul Complet de Rezoluție DNS</h3>
+      <p>Selectează fiecare pas pentru a inspecta antetul pachetului DNS (flag-uri <code>QR</code>, <code>RD</code>, <code>RA</code>, <code>AA</code>, <code>RCODE</code>) și rolul fiecărui nod:</p>
+
+      <div class="step-buttons" role="group" aria-label="Pașii rezoluției DNS">
+        <button type="button" class="btn-outline step-btn" data-dns-step="0" aria-pressed="true">Toți Pașii (Vedere Completă)</button>
+        <button type="button" class="btn-outline step-btn" data-dns-step="1" aria-pressed="false">Pasul 1: Stub -&gt; Recursive</button>
+        <button type="button" class="btn-outline step-btn" data-dns-step="2" aria-pressed="false">Pasul 2: Zona Rădăcină (.)</button>
+        <button type="button" class="btn-outline step-btn" data-dns-step="3" aria-pressed="false">Pasul 3: TLD (.art.)</button>
+        <button type="button" class="btn-outline step-btn" data-dns-step="4" aria-pressed="false">Pasul 4: Autoritativ (ns1.example.net.)</button>
+        <button type="button" class="btn-outline step-btn" data-dns-step="5" aria-pressed="false">Pasul 5: Separarea Web vs. Mail</button>
+      </div>
+
+      <div class="svg-stage">
+        <svg viewBox="0 0 920 270" role="img" aria-labelledby="svg-dns-title">
+          <title id="svg-dns-title">Lanțul determinist de rezoluție DNS de la Stub Resolver la nameserverul autoritativ</title>
+          <rect width="920" height="270" fill="#07070a" rx="8"/>
+
+          <!-- Nodes -->
+          <g id="dns-node-stub">
+            <rect x="20" y="95" width="145" height="80" rx="6" fill="#121218" stroke="#d4af37" stroke-width="2"/>
+            <text x="92" y="125" fill="#f8fafc" font-family="monospace" font-size="12" text-anchor="middle" font-weight="bold">STUB RESOLVER</text>
+            <text x="92" y="145" fill="#94a3b8" font-family="monospace" font-size="10" text-anchor="middle">OS getaddrinfo()</text>
+            <text x="92" y="162" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle">UDP :53 [RD=1]</text>
+          </g>
+
+          <g id="dns-node-rec">
+            <rect x="215" y="95" width="165" height="80" rx="6" fill="#121218" stroke="#cbd5e1" stroke-width="1.5"/>
+            <text x="297" y="125" fill="#f8fafc" font-family="monospace" font-size="12" text-anchor="middle" font-weight="bold">RECURSIVE CACHE</text>
+            <text x="297" y="145" fill="#94a3b8" font-family="monospace" font-size="10" text-anchor="middle">1.1.1.1 / Unbound</text>
+            <text x="297" y="162" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle">Validează DNSSEC + TTL</text>
+          </g>
+
+          <g id="dns-node-root">
+            <rect x="445" y="18" width="210" height="62" rx="6" fill="#121218" stroke="#d4af37" stroke-width="1.5"/>
+            <circle cx="465" cy="38" r="5" fill="#d4af37"/>
+            <text x="558" y="42" fill="#f8fafc" font-family="monospace" font-size="12" text-anchor="middle" font-weight="bold">ROOT ZONE (.)</text>
+            <text x="550" y="62" fill="#94a3b8" font-family="monospace" font-size="10" text-anchor="middle">a..m.root-servers.net. (Anycast)</text>
+          </g>
+
+          <g id="dns-node-tld">
+            <rect x="445" y="104" width="210" height="62" rx="6" fill="#121218" stroke="#cbd5e1" stroke-width="1.5"/>
+            <text x="550" y="128" fill="#f8fafc" font-family="monospace" font-size="12" text-anchor="middle" font-weight="bold">TLD REGISTRY (.art.)</text>
+            <text x="550" y="148" fill="#94a3b8" font-family="monospace" font-size="10" text-anchor="middle">Delegare NS + DS (DNSSEC)</text>
+          </g>
+
+          <g id="dns-node-auth">
+            <rect x="445" y="190" width="210" height="64" rx="6" fill="#121218" stroke="#d4af37" stroke-width="2"/>
+            <text x="550" y="214" fill="#f8fafc" font-family="monospace" font-size="12" text-anchor="middle" font-weight="bold">ns1..ns4.example.net.</text>
+            <text x="550" y="232" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle">AUTORITATIV [AA=1, RA=0]</text>
+            <text x="550" y="246" fill="#94a3b8" font-family="monospace" font-size="9" text-anchor="middle">Zona: originzero.art.</text>
+          </g>
+
+          <g id="dns-node-targets">
+            <rect x="705" y="55" width="195" height="68" rx="6" fill="#121218" stroke="#d4af37" stroke-width="1.5"/>
+            <text x="802" y="78" fill="#d4af37" font-family="monospace" font-size="11" text-anchor="middle" font-weight="bold">A / AAAA -&gt; NOD SUVERAN</text>
+            <text x="802" y="96" fill="#f8fafc" font-family="monospace" font-size="10" text-anchor="middle">:443 zero-origin Shield</text>
+            <text x="802" y="112" fill="#94a3b8" font-family="monospace" font-size="9" text-anchor="middle">Web + C2PA + Scanner</text>
+
+            <rect x="705" y="155" width="195" height="68" rx="6" fill="#121218" stroke="#cbd5e1" stroke-width="1.5"/>
+            <text x="802" y="178" fill="#cbd5e1" font-family="monospace" font-size="11" text-anchor="middle" font-weight="bold">MX / SPF -&gt; NOD SMTP</text>
+            <text x="802" y="196" fill="#f8fafc" font-family="monospace" font-size="10" text-anchor="middle">198.51.100.25 (RFC 5737)</text>
+            <text x="802" y="212" fill="#94a3b8" font-family="monospace" font-size="9" text-anchor="middle">contact@originzero.art</text>
+          </g>
+
+          <!-- Connectors -->
+          <line x1="165" y1="135" x2="215" y2="135" stroke="#d4af37" stroke-width="2"/>
+          <line x1="380" y1="115" x2="445" y2="49" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <line x1="380" y1="135" x2="445" y2="135" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <line x1="380" y1="155" x2="445" y2="220" stroke="#d4af37" stroke-width="2"/>
+          <line x1="655" y1="210" x2="705" y2="90" stroke="#d4af37" stroke-width="1.5"/>
+          <line x1="655" y1="230" x2="705" y2="190" stroke="#cbd5e1" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div id="dns-step-detail" class="callout-box" role="status" aria-live="polite">
+        Selectează un pas de mai sus pentru a inspecta structura pachetului DNS corespunzător.
+      </div>
+
+      <h3>1.3 Dicționarul Tehnic al Înregistrărilor DNS în Producție</h3>
+      <ul>
+        <li><strong><code>SOA</code> (Start of Authority):</strong> Antetul administrativ al zonei. Conține serverul primar, numărul de serie (incrementat la fiecare modificare) și câmpul <code>MINIMUM</code> utilizat conform <a href="https://datatracker.ietf.org/doc/html/rfc2308">RFC 2308</a> drept durată de <em>negative caching</em> (cât timp un resolver memorează faptul că un subdomeniu nu există, adică <code>NXDOMAIN</code>).</li>
+        <li><strong><code>NS</code> (Name Server):</strong> Deleagă autoritatea unei zone către un set de servere autoritative redundante (de exemplu <code>ns1.example.net.</code> până la <code>ns4.example.net.</code>). Trebuie să fie identice atât în registrul părinte <code>.art.</code>, cât și în interiorul zonei.</li>
+        <li><strong><code>A</code> și <code>AAAA</code>:</strong> Mapează un nume direct la un întreg pe 32 de biți (IPv4, <code>RFC 1035</code>) respectiv pe 128 de biți (IPv6, <a href="https://datatracker.ietf.org/doc/html/rfc3596">RFC 3596</a>).</li>
+        <li><strong><code>CNAME</code> (Canonical Name) și Interdicția la Apex:</strong> Redirecționează un nume către un alt nume. Conform <a href="https://datatracker.ietf.org/doc/html/rfc2181">RFC 2181 §10.1</a>, o înregistrare <code>CNAME</code> <strong>nu are voie să coexiste cu nicio altă înregistrare pe același nod</strong>. De aceea nu poți pune niciodată <code>CNAME</code> pe rădăcina domeniului <code>originzero.art.</code> (deoarece acolo există deja obligatoriu <code>SOA</code>, <code>NS</code> și <code>MX</code>!).</li>
+        <li><strong><code>MX</code> și <code>TXT</code> (Izolarea Poștei Electronice la Migrare):</strong> Când un server trimite un e-mail către <code>contact@originzero.art</code>, el nu caută înregistrarea <code>A</code> a site-ului web, ci interoghează explicit tipul <code>MX</code>, care returnează <code>mail.originzero.art.</code> -&gt; <code>198.51.100.25</code> (server dedicat de poștă electronică). Înregistrările <code>TXT</code> publică politicile anti-falsificare: <code>SPF</code> (ce IP-uri au dreptul să emită mailuri), cheia publică criptografică <code>DKIM</code> și politica de raportare/respingere <code>DMARC</code>. Astfel, migrarea originii web prin modificarea <code>A</code>/<code>AAAA</code> nu atinge fluxul de e-mail dacă <code>MX</code> și <code>+ip4:198.51.100.25</code> din <code>SPF</code> rămân intacte.</li>
+        <li><strong>DNSSEC (<a href="https://datatracker.ietf.org/doc/html/rfc4033">RFC 4033</a>, <a href="https://datatracker.ietf.org/doc/html/rfc4034">4034</a>, <a href="https://datatracker.ietf.org/doc/html/rfc4035">4035</a>):</strong> DNS-ul clasic pe UDP nu este criptat și nici autentificat, fiind vulnerabil la otrăvirea cache-ului (<em>cache poisoning</em>). DNSSEC adaugă semnături criptografice: înregistrările zonei sunt semnate cu o cheie <code>ZSK</code> generând înregistrări <code>RRSIG</code>; cheile publice sunt publicate în <code>DNSKEY</code> și semnate cu o cheie <code>KSK</code>, al cărei hash este urcat în registrul părinte (<code>.art.</code>) sub forma unei înregistrări <code>DS</code> (Delegation Signer).</li>
+      </ul>
+
+      <div class="callout-box">
+        <strong>Moduri Reale de Eșec DNS și Diagnostic la Nivel de Pachet:</strong>
+        <ul>
+          <li><strong><code>NXDOMAIN</code> (RCODE=3, Non-Existent Domain):</strong> Serverul autoritativ confirmă matematic că numele cerut nu există deloc în zonă. Cauză clasică la editarea zonei: omiterea punctului final (scriind <code>scanner.originzero.art</code> în loc de <code>scanner.originzero.art.</code>, serverul concatenează automat originea și creează greșit <code>scanner.originzero.art.originzero.art.</code>).</li>
+          <li><strong><code>SERVFAIL</code> (RCODE=2, Server Failure):</strong> Resolverul recursiv nu a putut obține sau valida răspunsul. Cauza numărul 1 după o migrare de nameservere: înregistrarea <code>DS</code> veche a rămas activă la registrar, dar noul server DNS nu semnează zona cu cheia corespunzătoare. Diagnostic infailibil: rulezi <code>dig originzero.art +cd</code> (<em>Checking Disabled</em>); dacă cu <code>+cd</code> primești <code>NOERROR</code> și IP-ul corect, iar fără <code>+cd</code> primești <code>SERVFAIL</code>, ai dovedit 100% o ruptură de validare DNSSEC!</li>
+          <li><strong>Cache <code>TTL</code> Învechit (Stale TTL) după o Migrare de Origine:</strong> Dacă înainte de mutare <code>A</code> avea <code>TTL 86400</code> (24 ore), resolverele ISP-urilor nu vor întreba din nou serverul DNS autoritativ timp de o zi întreagă, trimițând clienții tot spre IP-ul vechi. Procedura corectă: reduci <code>TTL</code> la <code>300</code> secunde cu cel puțin 24h înainte de fereastra de migrare.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- MODULUL 2: ADRESARE IP, CIDR, NAT SI IPV6 -->
+    <!-- ================================================================== -->
+    <section id="modul-2" class="module-block" aria-labelledby="h-mod-2">
+      <span class="epistemic-badge">[VERIFIED_TECHNICAL] RFC 791 · RFC 4632 · RFC 1918 · RFC 8200 · RFC 4862</span>
+      <span class="epistemic-badge demo">[ILLUSTRATIVE_DEMO] Calculator Binar pe 32 Biți</span>
+      <h2 id="h-mod-2">Modulul 2: Adresarea IP pe Biți, Subnetting CIDR, NAT/PAT și IPv6</h2>
+      <p>
+        Pentru kernelul Linux, adresa IPv4 <code>198.51.100.42</code> nu este un șir de text cu patru numere, ci un singur registru binar fără semn pe <strong>32 de biți</strong> (<code>11000110 00110011 01100100 00101010</code> = <code>0xC633642A</code>, conform <a href="https://datatracker.ietf.org/doc/html/rfc791">RFC 791</a>). Notația punctată (<em>dotted-quad</em>) împarte doar acești 32 de biți în 4 grupuri a câte 8 biți (octeți, cu valori între <code>0</code> și <code>255</code>) pentru lizibilitate umană.
+      </p>
+
+      <h3>2.1 Cum funcționează CIDR (Classless Inter-Domain Routing, RFC 4632)</h3>
+      <p>
+        Sufixul <code>/p</code> (de exemplu <code>/24</code>) indică exact câți biți de la stânga la dreapta reprezintă <strong>prefixul rețelei</strong> (mascați cu <code>1</code> binar), restul de <code>32 - p</code> biți reprezentând <strong>identificatorul gazdei</strong> în interiorul acelei subrețele:
+      </p>
+      <ul>
+        <li><strong>Adresa de Rețea (Network ID):</strong> Operația logică pe biți <code>IP &amp; MASK</code> (toți biții de gazdă devin <code>0</code>).</li>
+        <li><strong>Adresa de Broadcast:</strong> Operația logică <code>NETWORK | (~MASK)</code> (toți biții de gazdă devin <code>1</code>).</li>
+        <li><strong>Numărul de gazde utilizabile:</strong> Pentru <code>p &le; 30</code>, formula este <code>2<sup>32 - p</sup> - 2</code> (scăzând adresa de rețea și cea de broadcast). Pentru legături punct-la-punct între routere, <a href="https://datatracker.ietf.org/doc/html/rfc3021">RFC 3021</a> permite prefixul <code>/31</code> cu <strong>2 adrese utilizabile</strong> (fără broadcast), iar <code>/32</code> desemnează o rută exactă către o singură gazdă (1 adresă).</li>
+        <li><strong>Aplicație directă în <code>zero-origin</code>:</strong> Când scutul blochează un crawler în <code>zero-origin-audit.db</code>, funcția <code>anonymize_ip()</code> zerorizează ultimii 8 biți (mască <code>/24</code> pe IPv4) respectiv ultimii 80 de biți (mască <code>/48</code> pe IPv6), păstrând vizibilitatea asupra rețelei sursă (ASN/datacenter) dar garantând matematic retenție zero de date personale!</li>
+      </ul>
+
+      <!-- INTERACTIVE CIDR CALCULATOR & BIT VISUALIZER -->
+      <h3>2.2 Simulator Interactiv CIDR pe 32 de Biți și Detector de Suprapunere (Overlap)</h3>
+      <div class="control-deck">
+        <form id="cidr-form" class="probe-form" action="#modul-2" method="GET">
+          <div class="field-group">
+            <label for="cidr-input-a">Subrețea Principală A (format IPv4/prefix)</label>
+            <input type="text" id="cidr-input-a" name="cidr_a" value="198.51.100.42/24" autocorrect="off" autocapitalize="none" spellcheck="false">
+          </div>
+          <div class="field-group">
+            <label for="cidr-input-b">Subrețea Comparată B (pentru verificare suprapunere)</label>
+            <input type="text" id="cidr-input-b" name="cidr_b" value="198.51.100.128/25" autocorrect="off" autocapitalize="none" spellcheck="false">
+          </div>
+          <div class="field-group">
+            <button type="submit" class="btn-gold">Calculează Biții și Suprapunerea</button>
+          </div>
+        </form>
+        <div id="cidr-error" class="status-bar" role="status" aria-live="polite">
+          Biții aurii marchează prefixul de rețea, iar biții argintii marchează spațiul de gazdă.
+        </div>
+
+        <div id="cidr-bit-grid" class="bit-grid" aria-label="Reprezentarea pe 32 de biți a adresei IPv4"></div>
+
+        <div class="split-comparator mb-0">
+          <div class="telemetry-card">
+            <h3>Rezultat Matematic Subrețea A</h3>
+            <dl id="cidr-dl-a" class="kv-list"></dl>
+          </div>
+          <div class="telemetry-card">
+            <h3>Verificare Suprapunere (A vs. B)</h3>
+            <dl id="cidr-dl-overlap" class="kv-list"></dl>
+          </div>
+        </div>
+      </div>
+
+      <h3>2.3 Spațiul Privat RFC 1918, Loopback 127.0.0.0/8 și NAT/PAT</h3>
+      <p>
+        Nu orice adresă IPv4 este rutabilă pe Internetul public. <a href="https://datatracker.ietf.org/doc/html/rfc1918">RFC 1918</a> rezervă trei blocuri private (<code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, <code>192.168.0.0/16</code>) pe care routerele BGP din Internet le aruncă imediat (filtrare <em>bogon/martian</em>). Pentru ca o gazdă privată să acceseze Internetul, routerul de margine execută <strong>NAPT / PAT</strong> (<a href="https://datatracker.ietf.org/doc/html/rfc2663">RFC 2663</a>): rescrie IP-ul sursă privat și portul sursă TCP/UDP cu IP-ul său public și un port efemer unic, păstrând maparea într-un tabel de stări (<code>conntrack</code>) și recalculând sumele de control (checksums) L3 și L4.
+      </p>
+      <p>
+        Similar, blocul <strong>Loopback <code>127.0.0.0/8</code></strong> (<a href="https://datatracker.ietf.org/doc/html/rfc1122">RFC 1122</a>) nu părăsește niciodată stiva software a kernelului local. Pe nodul suveran, serviciile de aplicație ascultă exclusiv pe interfața virtuală <code>lo</code> (<code>127.0.0.1</code>): niciun atacator extern nu poate deschide un socket direct către ele, fiind obligat să treacă prin portul <code>:443</code> păzit de <code>zero-origin</code>.
+      </p>
+
+      <h3>2.4 IPv6 (RFC 8200), Subrețeaua Canonică /64 și SLAAC (RFC 4862)</h3>
+      <p>
+        IPv6 extinde spațiul de adresare la <strong>128 de biți</strong> (scris în 8 grupuri hexazecimale separate prin două puncte, de exemplu <code>2001:db8:100::1</code> conform <a href="https://datatracker.ietf.org/doc/html/rfc3849">RFC 3849</a>), simplifică antetul L3 la o dimensiune fixă de 40 de octeți, elimină fragmentarea în routerele intermediare și înlocuiește complet <em>broadcast</em>-ul cu grupuri <em>multicast</em> și <strong>Neighbor Discovery Protocol</strong> peste <code>ICMPv6</code> (<a href="https://datatracker.ietf.org/doc/html/rfc4861">RFC 4861</a>). În IPv6, orice segment LAN standard folosește un prefix <strong><code>/64</code></strong>: primii 64 de biți identifică rețeaua, iar ultimii 64 de biți formează <em>Interface Identifier</em>-ul, permițând autoconfigurarea fără stare (<strong>SLAAC</strong>, <a href="https://datatracker.ietf.org/doc/html/rfc4862">RFC 4862</a>) fără server DHCP.
+      </p>
+
+      <div class="callout-box">
+        <strong>Moduri Reale de Eșec IP și Diagnostic:</strong>
+        <ul>
+          <li><strong>Suprapunere de Subrețele CIDR (Subnet Overlap):</strong> Configurarea lui <code>10.10.0.0/23</code> (care acoperă <code>10.10.0.0</code> până la <code>10.10.1.255</code>!) pe o interfață și a lui <code>10.10.1.0/24</code> pe altă interfață sau tunel VPN deturnează jumătate din trafic către interfața mai specifică (<code>/24</code> câștigă în fața lui <code>/23</code>!).</li>
+          <li><strong>Blocarea Oarbă a ICMP / ICMPv6 (PMTUD Blackhole):</strong> În IPv6 routerele nu fragmentează pachete. Dacă un pachet depășește MTU-ul unei legături (de exemplu un tunel PPPoE sau WireGuard de 1420 octeți), routerul trimite înapoi <code>ICMPv6 Packet Too Big</code> (<a href="https://datatracker.ietf.org/doc/html/rfc8201">RFC 8201</a>). Dacă un administrator neexperimentat blochează tot protocolul ICMP în firewall, handshake-ul TCP de 60 de octeți reușește, dar conexiunea îngheață complet în momentul în care serverul trimite certificatul TLS mare! De aceea politica corectă de filtrare L3 permite explicit mesajele de control <code>packet-too-big</code> și <code>destination-unreachable</code>.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- MODULUL 3: RUTARE LPM, BGP ANYCAST SI ZERO-ORIGIN PE FIR -->
+    <!-- ================================================================== -->
+    <section id="modul-3" class="module-block" aria-labelledby="h-mod-3">
+      <span class="epistemic-badge">[VERIFIED_TECHNICAL] RFC 4271 (BGP-4) · PROXY v2 · FoxIO JA4</span>
+      <h2 id="h-mod-3">Modulul 3: Rutarea Longest Prefix Match, BGP Anycast și Suveranitatea pe Fir</h2>
+      <p>
+        Cum decide un router încotro să trimită un pachet? Nu alege la întâmplare și nu caută "cel mai scurt cablu fizic". Există două niveluri distincte:
+      </p>
+      <ol>
+        <li>
+          <strong>În planul de înaintare (Data Plane / FIB): Regula supremă este Longest Prefix Match (LPM).</strong> Dacă în tabela de rutare există simultan ruta implicită <code>0.0.0.0/0</code>, o rută agregată <code>203.0.113.0/24</code> și o subrețea mai specifică <code>203.0.113.0/25</code>, un pachet destinat lui <code>203.0.113.10</code> (bloc documentație <a href="https://datatracker.ietf.org/doc/html/rfc5737">RFC 5737</a>) va alege întotdeauna <code>/25</code>, indiferent de metrica administrativă a celorlalte prefixe mai scurte!
+        </li>
+        <li>
+          <strong>Între Sisteme Autonome (Control Plane / BGP-4, <a href="https://datatracker.ietf.org/doc/html/rfc4271">RFC 4271</a>):</strong> Internetul este o federație de Sisteme Autonome (ASN-uri de acces, noduri IXP de interconectare și rețele Tier-1 de tranzit, ex. <code>AS64496</code>..<code>AS64511</code> în documentația <a href="https://datatracker.ietf.org/doc/html/rfc5398">RFC 5398</a>). BGP-4 este un protocol de tip <em>path-vector</em> care alege ruta evaluând determinist atribute de politică economică și administrativă: mai întâi <code>LOCAL_PREF</code> (preferința locală, ex. client ori peering gratuit înaintea tranzitului plătit), apoi lungimea vectorului <code>AS_PATH</code>, apoi <code>ORIGIN</code> și <code>MED</code>. Prin <strong>BGP Anycast</strong> (<a href="https://datatracker.ietf.org/doc/html/rfc4786">RFC 4786</a>), servicii precum <code>1.1.1.1</code> sau serverele Root DNS anunță exact același prefix IP din sute de locații globale, BGP livrând pachetul către instanța cea mai apropiată din punct de vedere topologic al politicii BGP.
+        </li>
+      </ol>
+
+      <h3>3.1 Arhitectura pe Portul :443: De ce nu permitem terminarea TLS înainte de zero-origin</h3>
+      <p>
+        Când un crawler avansat minte în antetul HTTP trimițând <code>User-Agent: Mozilla/5.0 ... Chrome/130.0</code>, stiva lui TLS îl trădează în primul pachet <code>ClientHello</code>: bibliotecile Python (<code>urllib3</code>, <code>aiohttp</code>), Go (<code>crypto/tls</code>) sau curl au o ordine diferită a extensiilor TLS, liste diferite de suite de cifrare și nu generează valori aleatoare <code>GREASE</code> (<a href="https://datatracker.ietf.org/doc/html/rfc8701">RFC 8701</a>) identice cu un motor real Chromium sau WebKit. Pe nodul suveran, păstrăm acești octeți neatinși prin multiplexare TCP la Layer-4:
+      </p>
+
+      <!-- DETERMINISTIC SVG #3: L4 SNI + ZERO-ORIGIN WIRE TOPOLOGY -->
+      <div class="svg-stage">
+        <svg viewBox="0 0 920 290" role="img" aria-labelledby="svg-sni-title">
+          <title id="svg-sni-title">Topologia suverană pe portul 443 cu păstrarea amprentei JA4</title>
+          <rect width="920" height="290" fill="#07070a" rx="8"/>
+
+          <!-- Client -->
+          <rect x="18" y="105" width="155" height="80" rx="6" fill="#121218" stroke="#cbd5e1" stroke-width="1.5"/>
+          <text x="95" y="133" fill="#f8fafc" font-family="monospace" font-size="11" text-anchor="middle" font-weight="bold">CLIENT / BOT</text>
+          <text x="95" y="152" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle">TLS ClientHello</text>
+          <text x="95" y="169" fill="#94a3b8" font-family="monospace" font-size="9" text-anchor="middle">SNI + Ciphers + GREASE</text>
+
+          <!-- L4 SNI Stream -->
+          <rect x="215" y="90" width="195" height="110" rx="6" fill="#121218" stroke="#d4af37" stroke-width="2"/>
+          <text x="312" y="116" fill="#d4af37" font-family="monospace" font-size="11" text-anchor="middle" font-weight="bold">ROUTER TCP L4 SNI (:443)</text>
+          <text x="312" y="136" fill="#f8fafc" font-family="monospace" font-size="10" text-anchor="middle">RFC 6066 SNI Peek</text>
+          <text x="312" y="154" fill="#f8fafc" font-family="monospace" font-size="10" text-anchor="middle">PROXY protocol v2</text>
+          <text x="312" y="176" fill="#94a3b8" font-family="monospace" font-size="9" text-anchor="middle">NU decriptează TLS!</text>
+
+          <!-- Shielded Branch -->
+          <rect x="460" y="24" width="235" height="118" rx="6" fill="#121218" stroke="#d4af37" stroke-width="2"/>
+          <text x="577" y="48" fill="#d4af37" font-family="monospace" font-size="11" text-anchor="middle" font-weight="bold">zero-origin (Loopback L7)</text>
+          <text x="577" y="68" fill="#f8fafc" font-family="monospace" font-size="10" text-anchor="middle">1. Verifică PROXY v2 IP</text>
+          <text x="577" y="86" fill="#f8fafc" font-family="monospace" font-size="10" text-anchor="middle">2. TcpStream::peek() -&gt; JA4</text>
+          <text x="577" y="104" fill="#f8fafc" font-family="monospace" font-size="10" text-anchor="middle">3. FCrDNS + Reguli Bot</text>
+          <text x="577" y="124" fill="#94a3b8" font-family="monospace" font-size="9" text-anchor="middle">SQLite WAL: zero-origin-audit.db</text>
+
+          <!-- Outcomes -->
+          <rect x="735" y="18" width="168" height="54" rx="6" fill="#121218" stroke="#cbd5e1" stroke-width="1.5"/>
+          <text x="819" y="41" fill="#f8fafc" font-family="monospace" font-size="10" text-anchor="middle" font-weight="bold">BOT -&gt; 403 DROP</text>
+          <text x="819" y="59" fill="#94a3b8" font-family="monospace" font-size="9" text-anchor="middle">0 octeți imagine expuși</text>
+
+          <rect x="735" y="86" width="168" height="62" rx="6" fill="#121218" stroke="#d4af37" stroke-width="1.5"/>
+          <text x="819" y="108" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle" font-weight="bold">OM -&gt; 200 OK (Origine)</text>
+          <text x="819" y="125" fill="#f8fafc" font-family="monospace" font-size="9" text-anchor="middle">TDM-Reservation: 1</text>
+          <text x="819" y="139" fill="#94a3b8" font-family="monospace" font-size="9" text-anchor="middle">+ C2PA Ed25519 Semnat</text>
+
+          <!-- Unshielded Branch -->
+          <rect x="460" y="178" width="443" height="86" rx="6" fill="#121218" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 3"/>
+          <text x="681" y="204" fill="#cbd5e1" font-family="monospace" font-size="11" text-anchor="middle" font-weight="bold">SNI: unsafe.originzero.art -&gt; LISTENER CONTROL NEPROTEJAT</text>
+          <text x="681" y="226" fill="#94a3b8" font-family="monospace" font-size="10" text-anchor="middle">Ocolește zero-origin la Layer-4 · Fără JA4 · Fără TDM · Canary 1.84 MB Nesemnat</text>
+          <text x="681" y="246" fill="#f8fafc" font-family="monospace" font-size="9" text-anchor="middle">Demonstrează exact vulnerabilitatea unui server standard neprotejat</text>
+
+          <!-- Lines -->
+          <line x1="173" y1="145" x2="215" y2="145" stroke="#d4af37" stroke-width="2"/>
+          <line x1="410" y1="120" x2="460" y2="80" stroke="#d4af37" stroke-width="2"/>
+          <line x1="410" y1="170" x2="460" y2="220" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <line x1="695" y1="58" x2="735" y2="45" stroke="#cbd5e1" stroke-width="1.5"/>
+          <line x1="695" y1="108" x2="735" y2="115" stroke="#d4af37" stroke-width="2"/>
+        </svg>
+      </div>
+
+      <div class="callout-box">
+        <strong>Moduri Reale de Eșec în Rutare (Asymmetric și Blackhole):</strong>
+        <ul>
+          <li><strong>Rutare Asimetrică (Asymmetric Routing):</strong> Pachetul <code>SYN</code> intră pe o interfață de rețea (ex. <code>eth0</code>), dar tabela de rutare trimite răspunsul <code>SYN-ACK</code> pe o altă interfață (ex. <code>eth1</code> sau un gateway secundar). Un firewall <em>stateful</em> (<code>conntrack</code>) de pe a doua cale vede un <code>SYN-ACK</code> fără <code>SYN</code> anterior, îl clasifică drept <code>ct state invalid</code> și îl aruncă silențios!</li>
+          <li><strong>Blackhole Route (<code>ip route add blackhole 203.0.113.99/32</code>):</strong> O rută specifică <code>/32</code> (care câștigă prin Longest Prefix Match!) aruncă pachetele în kernel fără a trimite nici măcar un mesaj <code>ICMP Unreachable</code> înapoi, utilizată deliberat în atenuarea atacurilor DDoS (RTBH).</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- MODULUL 4: SIMULATOR CLI SI 5 INCIDENTE REALE -->
+    <!-- ================================================================== -->
+    <section id="modul-4" class="module-block" aria-labelledby="h-mod-4">
+      <span class="epistemic-badge demo">[ILLUSTRATIVE_DEMO] Simulator Determinist de Terminal și Tichete CCIE</span>
+      <h2 id="h-mod-4">Modulul 4: Laborator CLI Interactiv și Scenarii de Troubleshooting în Producție</h2>
+      <p>
+        Rulează direct în browser comenzile esențiale ale unui inginer de rețea pe topologia de referință <code>originzero.art</code> / <code>unsafe.originzero.art</code> / <code>ns1.example.net</code> / serverul SMTP izolat (<code>198.51.100.25</code>, documentație <a href="https://datatracker.ietf.org/doc/html/rfc5737">RFC 5737</a>), apoi rezolvă cele 5 incidente reale de producție.
+      </p>
+
+      <div class="cli-window">
+        <div class="cli-toolbar" role="group" aria-label="Comenzi rapide de laborator">
+          <button type="button" class="btn-outline cli-preset" data-cmd="dig +trace originzero.art">dig +trace originzero.art</button>
+          <button type="button" class="btn-outline cli-preset" data-cmd="dig MX originzero.art">dig MX originzero.art</button>
+          <button type="button" class="btn-outline cli-preset" data-cmd="dig TXT originzero.art">dig TXT originzero.art</button>
+          <button type="button" class="btn-outline cli-preset" data-cmd="dig nonexistent.originzero.art">dig NXDOMAIN</button>
+          <button type="button" class="btn-outline cli-preset" data-cmd="dig broken-dnssec.originzero.art">dig SERVFAIL</button>
+          <button type="button" class="btn-outline cli-preset" data-cmd="dig broken-dnssec.originzero.art +cd">dig +cd (DNSSEC Test)</button>
+          <button type="button" class="btn-outline cli-preset" data-cmd="ip route get 203.0.113.10">ip route get</button>
+          <button type="button" class="btn-outline cli-preset" data-cmd="traceroute -n originzero.art">traceroute -n</button>
+          <button type="button" class="btn-outline cli-preset" data-cmd="curl -I https://originzero.art">curl -I (Uman)</button>
+          <button type="button" class="btn-outline cli-preset" data-cmd="curl -I -A GPTBot https://originzero.art">curl -I GPTBot (Scut)</button>
+          <button type="button" class="btn-outline cli-preset" data-cmd="curl -I -A GPTBot https://unsafe.originzero.art">curl -I GPTBot (Unsafe)</button>
+        </div>
+
+        <pre id="cli-output" class="cli-output" tabindex="0" aria-live="polite"></pre>
+
+        <form id="cli-form" class="cli-form" action="#modul-4" method="GET">
+          <label for="cli-input" class="cli-prompt">neteng@zero-origin:~$</label>
+          <input type="text" id="cli-input" name="cmd" value="dig +trace originzero.art" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="send">
+          <button type="submit" class="btn-gold">Rulează</button>
+        </form>
+      </div>
+
+      <h3>4.1 Cele 5 Incidente de Producție (Diagnostichează Cauza Rădăcină)</h3>
+      <p>Deschide fiecare tichet și alege diagnosticul corect pe baza dovezilor de pe fir:</p>
+
+      <div id="incidents-container">
+        <details class="incident-disclosure" name="prod-incident" open>
+          <summary>Tichet #1: NXDOMAIN pe scanner.originzero.art imediat după editarea fișierului de zonă DNS</summary>
+          <div class="incident-body">
+            <p><strong>Simptom:</strong> Ai adăugat o înregistrare <code>A</code> în zona <code>originzero.art</code> scriind în câmpul Host valoarea <code>scanner.originzero.art</code> (fără punct la final), dar <code>dig scanner.originzero.art</code> returnează <code>status: NXDOMAIN</code>.</p>
+            <button type="button" class="btn-outline incident-solve" data-inc="1" data-choice="wrong">Eroare de filtrare TCP pe portul 443 al nodului de margine</button>
+            <button type="button" class="btn-outline incident-solve" data-inc="1" data-choice="right">Lipsa punctului final a creat scanner.originzero.art.originzero.art. în fișierul de zonă</button>
+            <div id="inc-feedback-1" class="quiz-feedback" hidden></div>
+          </div>
+        </details>
+
+        <details class="incident-disclosure" name="prod-incident">
+          <summary>Tichet #2: SERVFAIL pe 1.1.1.1 și 8.8.8.8, deși dig @ns1.example.net răspunde cu NOERROR</summary>
+          <div class="incident-body">
+            <p><strong>Simptom:</strong> Serverul autoritativ <code>ns1.example.net</code> returnează IP-ul corect (<code>AA=1</code>), dar clienții care folosesc <code>1.1.1.1</code> primesc <code>status: SERVFAIL</code>. Când rulezi <code>dig @1.1.1.1 originzero.art +cd</code>, primești instantaneu IP-ul corect!</p>
+            <button type="button" class="btn-outline incident-solve" data-inc="2" data-choice="right">Înregistrare DS DNSSEC orfană sau nepotrivită în registrul părinte .art.</button>
+            <button type="button" class="btn-outline incident-solve" data-inc="2" data-choice="wrong">Procesul HTTP al originii web este oprit pe interfața de loopback</button>
+            <div id="inc-feedback-2" class="quiz-feedback" hidden></div>
+          </div>
+        </details>
+
+        <details class="incident-disclosure" name="prod-incident">
+          <summary>Tichet #3: După migrarea de pe un CDN terț pe un nod propriu, jumătate din vizitatori văd încă versiunea veche timp de 18 ore</summary>
+          <div class="incident-body">
+            <p><strong>Simptom:</strong> Ai schimbat înregistrarea <code>A</code> pe nameserverul autoritativ către noua adresă IP suverană, dar mulți utilizatori primesc încă certificatele și răspunsurile vechiului CDN.</p>
+            <button type="button" class="btn-outline incident-solve" data-inc="3" data-choice="right">Cache TTL vechi de 86400s nereîmprospătat în resolverele recursive ale ISP-urilor</button>
+            <button type="button" class="btn-outline incident-solve" data-inc="3" data-choice="wrong">Coliziune de porturi TCP pe interfața de loopback</button>
+            <div id="inc-feedback-3" class="quiz-feedback" hidden></div>
+          </div>
+        </details>
+
+        <details class="incident-disclosure" name="prod-incident">
+          <summary>Tichet #4: Un container intern pe 10.20.1.50 nu mai răspunde după adăugarea unei rețele 10.20.0.0/23</summary>
+          <div class="incident-body">
+            <p><strong>Simptom:</strong> Pe interfața <code>br0</code> aveai <code>10.20.0.0/23</code>, iar un coleg a ridicat un tunel WireGuard <code>wg0</code> cu subrețeaua <code>10.20.1.0/24</code>.</p>
+            <button type="button" class="btn-outline incident-solve" data-inc="4" data-choice="right">Suprapunere CIDR (/23 acoperă 10.20.0.0 - 10.20.1.255) combinată cu Longest Prefix Match (/24 câștigă)</button>
+            <button type="button" class="btn-outline incident-solve" data-inc="4" data-choice="wrong">Epuizarea adreselor IPv6 SLAAC pe legătura locală</button>
+            <div id="inc-feedback-4" class="quiz-feedback" hidden></div>
+          </div>
+        </details>
+
+        <details class="incident-disclosure" name="prod-incident">
+          <summary>Tichet #5: Conexiunea TCP pe :443 se deschide (SYN/SYN-ACK), dar îngheață la handshake-ul TLS pe conexiuni PPPoE</summary>
+          <div class="incident-body">
+            <p><strong>Simptom:</strong> Ping-ul mic merge sau este oprit, <code>nc -zv originzero.art 443</code> reușește, dar <code>curl https://originzero.art</code> rămâne blocat după <code>ClientHello</code> pentru clienții cu MTU 1492, după ce cineva a pus <code>ip protocol icmp drop</code> și <code>ip6 nexthdr icmpv6 drop</code> în firewall.</p>
+            <button type="button" class="btn-outline incident-solve" data-inc="5" data-choice="wrong">Certificatul Ed25519 C2PA are o cheie prea scurtă</button>
+            <button type="button" class="btn-outline incident-solve" data-inc="5" data-choice="right">Path MTU Discovery Blackhole cauzat de blocarea pachetelor ICMP Fragmentation Needed / ICMPv6 Packet Too Big</button>
+            <div id="inc-feedback-5" class="quiz-feedback" hidden></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- MODULUL 5: EXAMEN FINAL CCIE (8 INTREBARI) -->
+    <!-- ================================================================== -->
+    <section id="modul-5" class="module-block" aria-labelledby="h-mod-5">
+      <span class="epistemic-badge">[VERIFIED_TECHNICAL] Evaluare de Certificare 99% -&gt; 1%</span>
+      <h2 id="h-mod-5">Modulul 5: Verificare Tehnică Finală (8 Probleme de Arhitectură DNS, IP și Transport)</h2>
+      <p>
+        Răspunde la toate cele 8 întrebări de arhitectură și rutare pentru a valida stăpânirea conceptelor la nivel de pachet.
+      </p>
+
+      <form id="ccie-quiz-form" action="#modul-5" method="POST">
+        <div id="quiz-questions-root"></div>
+        <button type="submit" class="btn-gold">Verifică Răspunsurile și Calculează Scorul</button>
+      </form>
+      <div id="quiz-score-banner" class="status-bar mt-1" role="status" aria-live="polite">
+        Selectează câte o variantă pentru fiecare întrebare și apasă butonul de verificare.
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      <strong>originZero.Art</strong> · Academia Tehnică 99% -&gt; 1% · Testează live diferența pe fir în <a href="/">Comparatorul Split-Screen</a>.
+    </p>
+  </footer>
+
+  <script src="/assets/academy.js"></script>
+</body>
+</html>

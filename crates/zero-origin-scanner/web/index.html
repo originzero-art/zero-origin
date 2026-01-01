@@ -1,0 +1,209 @@
+<!--
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+-->
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>scanner.originzero.art // Telemetrie Live Scut vs. Fără Scut (originZero.Art)</title>
+  <meta name="description" content="Comparator live pe fir între o origine neprotejată și originea suverană originZero.Art protejată de scutul zero-origin (JA4, TDM Art. 4, C2PA Ed25519 și SQLite WAL).">
+  <link rel="canonical" href="https://scanner.originzero.art/">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/assets/scanner.css">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Sari direct la conținutul principal</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/" class="brand-logo" aria-label="scanner.originzero.art pagina principală">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span><span class="brand-char-gold">o</span><span class="brand-char-silver">rigin</span><span class="brand-char-gold">Z</span><span class="brand-char-silver">ero</span><span class="brand-art">.Art</span></span>
+        <span class="brand-sub-pill">SCANNER</span>
+      </a>
+
+      <nav class="top-nav" aria-label="Navigare scanner">
+        <a href="/" class="nav-pill" aria-current="page">Comparator Scut Live</a>
+        <a href="/cum-functioneaza-internetul" class="nav-pill">Academia DNS și IP (99% -&gt; 1%)</a>
+        <a href="https://originzero.art/" class="nav-pill">Înapoi pe originZero.Art</a>
+        <button type="button" id="theme-toggle" class="theme-btn" aria-pressed="false">Temă</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content" class="page-shell">
+    <section class="hero-banner">
+      <span class="epistemic-badge">[VERIFIED_TECHNICAL] Telemetrie Live pe Fir (Zero-SSRF)</span>
+      <h1 class="page-title">Comparator Split-Screen: Fără Scut vs. Sub Scutul zero-origin</h1>
+      <p class="page-lead">
+        Inspectează în timp real ce se întâmplă pe fir la nivel DNS, TLS ClientHello (amprenta JA4), antete HTTP de rezervare a drepturilor UE 2019/790 Art. 4, lățime de bandă consumată și semnătură criptografică C2PA Ed25519 atunci când un vizitator uman sau un robot de colectare accesează infrastructura suverană originZero.Art.
+      </p>
+    </section>
+
+    <section class="control-deck" aria-labelledby="probe-deck-heading">
+      <h2 id="probe-deck-heading" class="visually-hidden">Configurare sondă comparativă</h2>
+      <form id="probe-form" class="probe-form" action="/api/v1/probe" method="POST">
+        <fieldset class="persona-fieldset">
+          <legend>1. Selectează Identitatea Sondei pe Fir (Toggle Interactiv)</legend>
+          <div class="radio-row">
+            <div class="radio-option">
+              <input type="radio" id="mode-crawler" name="persona_mode" value="crawler" checked>
+              <label for="mode-crawler">Crawler Automat (GPTBot / CCBot / Scraper)</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="mode-human" name="persona_mode" value="human">
+              <label for="mode-human">Vizitator Uman / Colecționar</label>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="field-group">
+          <label for="bot-variant">Semnătură Crawler (când modul Crawler este activ)</label>
+          <select id="bot-variant" name="bot_variant">
+            <option value="gptbot">OpenAI GPTBot/1.2</option>
+            <option value="ccbot">CommonCrawl CCBot/2.0</option>
+            <option value="claudebot">Anthropic ClaudeBot/1.0</option>
+            <option value="bytespider">ByteDance Bytespider</option>
+            <option value="spoofed_googlebot">Googlebot Falsificat (Eșec FCrDNS)</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="left-target">Panou Stânga (Țintă Control Neprotejată)</label>
+          <select id="left-target" name="left_target">
+            <option value="unsafe.originzero.art" selected>unsafe.originzero.art (Control Fără Scut)</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="right-target">Panou Dreapta (Origine Suverană Protejată)</label>
+          <select id="right-target" name="right_target">
+            <option value="originzero.art" selected>originZero.Art (Sub Scutul zero-origin)</option>
+            <option value="757.originzero.art">757.originZero.Art (Portofoliu Creator)</option>
+            <option value="spartan.originzero.art">spartan.originZero.Art (Portofoliu Creator)</option>
+            <option value="crimadezignz.originzero.art">crimadezignz.originZero.Art (Portofoliu Creator)</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <button type="submit" id="run-probe-btn" class="btn-gold">Execută Sonda Live</button>
+        </div>
+      </form>
+
+      <div id="probe-status" class="status-bar" role="status" aria-live="polite">
+        Pregătit pentru inspecție deterministă pe fir. Lista de ținte este strict fixată pe server (Zero-SSRF).
+      </div>
+    </section>
+
+    <!-- Split-Screen Panes -->
+    <section class="split-comparator" aria-label="Rezultate comparative stânga și dreapta">
+      <!-- LEFT PANE: UNSAFE -->
+      <article class="pane-column" id="pane-left" aria-labelledby="left-pane-title">
+        <div class="pane-header">
+          <h2 id="left-pane-title" class="pane-title">unsafe.originzero.art</h2>
+          <span class="brand-sub-pill">FĂRĂ SCUT</span>
+        </div>
+        <div id="left-verdict" class="verdict-banner">Se așteaptă rularea sondei...</div>
+
+        <div class="telemetry-card">
+          <h3>1. Rezoluție DNS și Adresare IP</h3>
+          <dl id="left-dns" class="kv-list"></dl>
+        </div>
+        <div class="telemetry-card">
+          <h3>2. Handshake TLS și Amprentă JA4</h3>
+          <dl id="left-tls" class="kv-list"></dl>
+        </div>
+        <div class="telemetry-card">
+          <h3>3. Status HTTP și Antete Drepturi TDM</h3>
+          <dl id="left-http" class="kv-list"></dl>
+        </div>
+        <div class="telemetry-card">
+          <h3>4. Impact Payload și Lățime de Bandă</h3>
+          <dl id="left-payload" class="kv-list"></dl>
+        </div>
+        <div class="telemetry-card">
+          <h3>5. Proveniență Criptografică C2PA / JUMBF</h3>
+          <dl id="left-c2pa" class="kv-list"></dl>
+        </div>
+      </article>
+
+      <!-- RIGHT PANE: SHIELDED -->
+      <article class="pane-column shielded-pane" id="pane-right" aria-labelledby="right-pane-title">
+        <div class="pane-header">
+          <h2 id="right-pane-title" class="pane-title">originzero.art</h2>
+          <span id="right-pane-badge" class="brand-sub-pill">SCUT ZERO-ORIGIN ACTIV</span>
+        </div>
+        <div id="right-verdict" class="verdict-banner gold-verdict">Se așteaptă rularea sondei...</div>
+
+        <div class="telemetry-card">
+          <h3>1. Rezoluție DNS și Adresare IP</h3>
+          <dl id="right-dns" class="kv-list"></dl>
+        </div>
+        <div class="telemetry-card">
+          <h3>2. Handshake TLS și Amprentă JA4</h3>
+          <dl id="right-tls" class="kv-list"></dl>
+        </div>
+        <div class="telemetry-card">
+          <h3>3. Status HTTP și Antete Drepturi TDM</h3>
+          <dl id="right-http" class="kv-list"></dl>
+        </div>
+        <div class="telemetry-card">
+          <h3>4. Impact Payload și Lățime de Bandă</h3>
+          <dl id="right-payload" class="kv-list"></dl>
+        </div>
+        <div class="telemetry-card">
+          <h3>5. Proveniență Criptografică C2PA / JUMBF</h3>
+          <dl id="right-c2pa" class="kv-list"></dl>
+        </div>
+      </article>
+    </section>
+
+    <!-- CARD 6: LIVE SQLITE WAL AUDIT PROOF -->
+    <section class="section-card" aria-labelledby="wal-feed-heading">
+      <div class="pane-header">
+        <div>
+          <h2 id="wal-feed-heading">6. Dovadă Live în Baza SQLite WAL (zero-origin-audit.db)</h2>
+          <p class="page-lead">
+            Citire directă în mod <code>SQLITE_OPEN_READ_ONLY</code> din jurnalul WAL al scutului. Adresele IP sunt trunchiate determinist la prefixul de rețea <code>/24</code> (IPv4) și <code>/48</code> (IPv6) cu hash scurt (zero date cu caracter personal).
+          </p>
+        </div>
+        <button type="button" id="refresh-wal-btn" class="btn-outline">Reîmprospătează Jurnalul WAL</button>
+      </div>
+
+      <p id="wal-summary" class="status-bar">Interogare jurnal SQLite WAL...</p>
+
+      <div tabindex="0" role="region" aria-labelledby="wal-table-caption" class="table-wrapper">
+        <table class="data-table table-wal">
+          <caption id="wal-table-caption">Ultimele evenimente înregistrate de scutul de rețea zero-origin</caption>
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Marcă Timp UTC</th>
+              <th scope="col">Acțiune</th>
+              <th scope="col">Regulă Declanșată</th>
+              <th scope="col">Prefix Client (Zero-PII)</th>
+              <th scope="col">Amprentă JA4 și Cale</th>
+            </tr>
+          </thead>
+          <tbody id="wal-tbody">
+            <tr>
+              <th scope="row">#0</th>
+              <td colspan="5">Se încarcă telemetria din zero-origin-audit.db...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      <strong>originZero.Art</strong> · Scut de rețea <a href="https://github.com/originzero-art/zero-origin">zero-origin</a> (AGPLv3 / Apache 2.0) · Înțelege arhitectura de pachete în <a href="/cum-functioneaza-internetul">Academia DNS și IP (99% -&gt; 1%)</a>.
+    </p>
+  </footer>
+
+  <script src="/assets/comparator.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "$comment": "SPDX-License-Identifier: Apache-2.0 | SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://originzero.art/schemas/tdmrep.schema.json",
+  "title": "originZero.Art W3C-Aligned TDMRep Reservation Array",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "required": ["location", "tdm-reservation", "tdm-policy", "creator", "contact"],
+    "properties": {
+      "$schema": { "type": "string", "format": "uri" },
+      "location": { "type": "string", "minLength": 1 },
+      "tdm-reservation": { "type": "integer", "enum": [0, 1] },
+      "tdm-policy": { "type": "string", "format": "uri" },
+      "creator": { "type": "string", "minLength": 1 },
+      "contact": { "type": "string", "minLength": 3 },
+      "directives": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    },
+    "additionalProperties": false
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "$comment": "SPDX-License-Identifier: Apache-2.0 | SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://originzero.art/schemas/origin-claim.schema.json",
+  "title": "originZero.Art C2PA Human Provenance Claim",
+  "type": "object",
+  "required": [
+    "spec_version",
+    "claim_generator",
+    "creator_name",
+    "creator_url",
+    "actions",
+    "tdm_reservation",
+    "tdm_policy",
+    "asset_sha256",
+    "created_utc"
+  ],
+  "properties": {
+    "spec_version": { "type": "string" },
+    "claim_generator": { "type": "string" },
+    "creator_name": { "type": "string", "minLength": 1 },
+    "creator_url": { "type": "string", "format": "uri" },
+    "title": { "type": ["string", "null"] },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "tdm_reservation": { "type": "boolean" },
+    "tdm_policy": { "type": "string", "format": "uri" },
+    "asset_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "created_utc": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

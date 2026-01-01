@@ -1,0 +1,9 @@
+<!--
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="16" fill="#050505"/>
+  <circle cx="32" cy="32" r="20" fill="none" stroke="#d4af37" stroke-width="2.5"/>
+  <circle cx="32" cy="32" r="7" fill="#d4af37"/>
+</svg>

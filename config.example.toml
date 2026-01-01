@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+#
+# zero-origin // L7 Reverse Proxy Configuration Example
+
+listen_addr = "127.0.0.1:8443"
+upstream_origin = "http://127.0.0.1:8080"
+
+# Optional per-Host/SNI routing map to protect multiple origins on one listener
+# [upstream_routes]
+# "gallery-a.example.org" = "http://127.0.0.1:8082"
+# "gallery-b.example.org" = "http://127.0.0.1:8083"
+
+# Optional local TLS certificate paths (enables native HTTPS + non-destructive JA4 inspection)
+# tls_cert_path = "./certs/fullchain.pem"
+# tls_key_path = "./certs/privkey.pem"
+
+# Embedded SQLite WAL telemetry database (zero PII retention)
+sqlite_path = "./zero-origin-audit.db"
+
+# Per-IP token-bucket rate limit before deterministic HTTP 429 enforcement
+rate_limit_rpm = 120
+
+# Connection, Slowloris, TLS, and upstream deadline hardening
+max_concurrent_connections = 10240
+header_read_timeout_secs = 10
+tls_handshake_timeout_secs = 5
+upstream_timeout_secs = 30
+http2_keepalive_interval_secs = 15
+http2_keepalive_timeout_secs = 20
+
+# HAProxy PROXY protocol v1/v2 parsing (strictly gated on trusted_proxy_cidrs)
+accept_proxy_protocol = false
+
+# Async FCrDNS verification for claimed search bots (Googlebot, Bingbot, DuckDuckBot, Applebot)
+verify_search_bots_fcrdns = true
+# fcrdns_resolver = "1.1.1.1:53"
+fcrdns_cache_ttl_secs = 3600
+
+# Strict allowlist of trusted upstream proxies permitted to assert right-most X-Forwarded-For / PROXY header
+trusted_proxy_cidrs = [
+  "127.0.0.1/32",
+  "::1/128",
+]
+
+# Explicit datacenter or hostile ASN CIDRs blocked prior to upstream forwarding
+blocked_cidrs = []
+
+# Explicit JA4 ClientHello hashes blocked at TLS ingress
+blocked_ja4 = []
+
+# Additional custom scraper User-Agent substrings
+extra_blocked_user_agents = []
+
+[rights]
+domain = "originzero.art"
+creator = "originZero.Art Independent Creators"
+contact = "mailto:contact@originzero.art"
+license_uri = "https://originzero.art/license/tdm-reservation"
+tdm_reservation = true
+forbid_ai_training = true
+allow_search_indexing = true

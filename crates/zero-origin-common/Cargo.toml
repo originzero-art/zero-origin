@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+
+[package]
+name = "zero-origin-common"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license = "Apache-2.0"
+description = "Open specifications, TDM rights protocol, lossless container parsers, and provenance verification primitives for originZero.Art"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+crc32fast.workspace = true
+ed25519-dalek.workspace = true
+p256.workspace = true
+hex.workspace = true
+base64.workspace = true
+thiserror.workspace = true

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+
+User-agent: *
+Allow: /
+Allow: /cum-functioneaza-internetul
+Disallow: /api/
+
+Sitemap: https://scanner.originzero.art/sitemap.xml

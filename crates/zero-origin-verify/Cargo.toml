@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+
+[package]
+name = "zero-origin-verify"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license = "Apache-2.0"
+description = "Permissive Apache-2.0 client verification SDK for zero-origin C2PA/JUMBF manifests and EU TDM rights headers"
+
+[dependencies]
+zero-origin-common = { path = "../zero-origin-common" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

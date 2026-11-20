@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+
+[package]
+name = "zero-origin-ja4"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license = "AGPL-3.0-or-later"
+description = "Wire-level non-destructive TLS ClientHello parser and FoxIO JA4 fingerprint engine"
+
+[dependencies]
+sha2.workspace = true
+hex.workspace = true
+thiserror.workspace = true

@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+
+[package]
+name = "zero-origin-c2pa"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license = "AGPL-3.0-or-later"
+description = "Self-hosted Ed25519/ECDSA keygen and lossless JUMBF C2PA manifest injection engine"
+
+[dependencies]
+zero-origin-common = { path = "../zero-origin-common" }
+ed25519-dalek.workspace = true
+p256.workspace = true
+rcgen.workspace = true
+rand_core.workspace = true
+zeroize.workspace = true
+base64.workspace = true
+crc32fast.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+zero-origin-verify = { path = "../zero-origin-verify" }

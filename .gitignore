@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+
+# Rust build artifacts (retain Cargo.lock for reproducible static builds)
+target/
+**/*.rs.bk
+
+# Embedded SQLite WAL runtime telemetry databases
+*.db
+*.db-wal
+*.db-shm
+
+# Cryptographic keys & local test artifacts
+*.pem
+*.key
+keys/
+demo-keys/
+*.signed.*
+*.tampered.*
+
+# Python & OS clutter
+__pycache__/
+*.py[cod]
+.DS_Store
+.env*

@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Sebastian Paul Banszky <contact@originzero.art>
+
+version = 1
+
+[[annotations]]
+path = [
+    "crates/zero-origin-common/**",
+    "crates/zero-origin-verify/**",
+    "crates/zero-origin-scanner/**",
+    "specs/**",
+    "schemas/**",
+    "sdk/**",
+    "scripts/**",
+    ".github/**",
+    "Cargo.toml",
+    "Cargo.lock",
+    ".gitignore",
+    "config.example.toml",
+    "REUSE.toml",
+    "README.md",
+    "ROADMAP.md",
+    "GOVERNANCE.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md"
+]
+SPDX-FileCopyrightText = "2026 Sebastian Paul Banszky <contact@originzero.art>"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = [
+    "crates/zero-origin-ja4/**",
+    "crates/zero-origin-c2pa/**",
+    "crates/zero-origin-proxy/**",
+    "crates/zero-origin-cli/**"
+]
+SPDX-FileCopyrightText = "2026 Sebastian Paul Banszky <contact@originzero.art>"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
